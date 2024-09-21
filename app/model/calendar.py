@@ -84,3 +84,44 @@ class Day:
                     slot_not_available_error()
                 else:
                     self.slots[slot] = event_id
+
+
+class Calender:
+    def __init__(self):
+        self.days: dict[date, Day] = {}
+        self.events: dict[str, Event] = {}
+
+    def add_event(self, title: str, description: str, date_: date, start_at: time, end_at: time):
+
+        if date_ < datetime.now().date():
+            date_lower_than_today_error()
+
+        if date_ not in self.days:
+            self.days[date_] = Day(date_)
+
+        new_event = Event(title, description, date_, start_at, end_at)
+        self.days[date_].add_event(new_event.id, start_at, end_at)
+        self.events[new_event.id] = new_event
+
+        return new_event.id
+
+    def add_reminder(self, event_id: str, date_time: datetime, type_: str):
+        # por medio de un condicional simple
+        """ if event_id in self.events:
+                event_not_found_error()
+            else:
+                event.add_reminder(date_time, type_)"""
+
+        # por medio del método get de los diccionarios
+        event = self.events.get(event_id)
+        if event is None:
+            event_not_found_error()
+        else:
+            event.add_reminder(date_time, type_)
+
+
+
+
+
+
+

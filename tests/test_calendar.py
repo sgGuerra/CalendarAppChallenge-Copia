@@ -1,4 +1,4 @@
-from datetime import datetime, time, date
+from datetime import datetime, time, date, timedelta
 
 import pytest
 import inspect
@@ -24,15 +24,18 @@ if day_defined:
     from app.model.calendar import Day
 
 
+base_date = datetime.now().date() + timedelta(days=5)
+
+
 @pytest.fixture()
 def reminder_with_email():
-    date_time = datetime(2024, 5, 1, 12, 0)
+    date_time = datetime(base_date.year, base_date.month, base_date.day, 12, 0)
     return Reminder(date_time, Reminder.EMAIL)
 
 
 @pytest.fixture()
 def reminder_with_system():
-    date_time = datetime(2024, 5, 1, 12, 0)
+    date_time = datetime(base_date.year, base_date.month, base_date.day, 12, 0)
     return Reminder(date_time, Reminder.SYSTEM)
 
 
@@ -66,14 +69,14 @@ class TestReminder:
 
     @pytest.mark.skipif(not reminder_defined, reason="Reminder class not defined")
     def test_reminder_str_method_output(self, reminder_with_email):
-        assert str(reminder_with_email) == "Reminder on 2024-05-01 12:00:00 of type email"
+        assert str(reminder_with_email) == f"Reminder on {base_date.year}-{base_date.month:02d}-{base_date.day:02d} 12:00:00 of type email"
 
 
 @pytest.fixture()
 def event_without_reminders():
     return Event("Event title",
                  "Event description",
-                 datetime(2024, 5, 1).date(),
+                 base_date,
                  time(10, 0),
                  time(11, 0))
 
@@ -82,11 +85,11 @@ def event_without_reminders():
 def event_with_reminders():
     event = Event("Event title",
                   "Event description",
-                  datetime(2024, 5, 1).date(),
+                  base_date,
                   time(10, 0),
                   time(11, 0))
-    event.add_reminder(datetime(2024, 5, 1, 9, 0), Reminder.EMAIL)
-    event.add_reminder(datetime(2024, 5, 1, 8, 0), Reminder.SYSTEM)
+    event.add_reminder(datetime(base_date.year, base_date.month, base_date.day, 9, 0), Reminder.EMAIL)
+    event.add_reminder(datetime(base_date.year, base_date.month, base_date.day, 8, 0), Reminder.SYSTEM)
     return event
 
 
@@ -110,7 +113,7 @@ class TestEvent:
     @pytest.mark.parametrize(
         "attribute_name, expected_value",
         [("title", "Event title"), ("description", "Event description"),
-         ("date_", datetime(2024, 5, 1).date()),
+         ("date_", base_date),
          ("start_at", time(10, 0)),
          ("end_at", time(11, 0)),
          ("id", None),
@@ -125,7 +128,7 @@ class TestEvent:
     @pytest.mark.skipif(not event_defined, reason="Event class not defined")
     @pytest.mark.parametrize(
         "method_name, expected_return_type, args",
-        [("add_reminder", None, (datetime(2024, 5, 1, 9, 0), "email")),
+        [("add_reminder", None, (datetime(base_date.year, base_date.month, base_date.day, 9, 0), "email")),
          ("delete_reminder", None, (0,)),
          ("__str__", str, ())]
     )
@@ -138,17 +141,17 @@ class TestEvent:
 
     @pytest.mark.skipif(not reminder_defined, reason="Reminder class not defined")
     def test_add_reminder_method_functionality(self, event_without_reminders):
-        event_without_reminders.add_reminder(datetime(2024, 5, 1, 9, 0), Reminder.EMAIL)
+        event_without_reminders.add_reminder(datetime(base_date.year, base_date.month, base_date.day, 9, 0), Reminder.EMAIL)
         assert len(event_without_reminders.reminders) == 1
         assert event_without_reminders.reminders[0].type == Reminder.EMAIL
-        assert event_without_reminders.reminders[0].date_time == datetime(2024, 5, 1, 9, 0)
+        assert event_without_reminders.reminders[0].date_time == datetime(base_date.year, base_date.month, base_date.day, 9, 0)
 
     @pytest.mark.skipif(not reminder_defined, reason="Reminder class not defined")
     def test_delete_reminder_method_functionality(self, event_with_reminders):
         event_with_reminders.delete_reminder(0)
         assert len(event_with_reminders.reminders) == 1
         assert event_with_reminders.reminders[0].type == Reminder.SYSTEM
-        assert event_with_reminders.reminders[0].date_time == datetime(2024, 5, 1, 8, 0)
+        assert event_with_reminders.reminders[0].date_time == datetime(base_date.year, base_date.month, base_date.day, 8, 0)
 
     @pytest.mark.skipif(not reminder_defined, reason="Reminder class not defined")
     def test_delete_reminder_method_calls_reminder_not_found_error(self, event_without_reminders):
@@ -166,12 +169,12 @@ class TestEvent:
 
 @pytest.fixture()
 def day():
-    return Day(date(2024, 5, 1))
+    return Day(base_date)
 
 
 @pytest.fixture()
 def day_with_event():
-    day = Day(date(2024, 5, 1))
+    day = Day(base_date)
     day.add_event("event_id", time(10, 0), time(11, 0))
     return day
 
@@ -194,7 +197,7 @@ class TestDay:
     @pytest.mark.skipif(not day_defined, reason="Day class not defined")
     @pytest.mark.parametrize(
         "method_name, expected_return_type, args",
-        [("__init__", None, (date(2024, 5, 1))),
+        [("__init__", None, (base_date)),
          ("_init_slots", None, ()),
          ("add_event", None, ("event_id", time(10, 0), time(11, 0))),
          ("delete_event", None, ("event_id",)),
@@ -210,7 +213,7 @@ class TestDay:
     @pytest.mark.skipif(not day_defined, reason="Day class not defined")
     @pytest.mark.parametrize(
         "attribute_name, expected_value",
-        [("date_", date(2024, 5, 1)),
+        [("date_", base_date),
          ("slots", {time(hour, minute): None for hour in range(24) for minute in range(0, 60, 15)})
          ]
     )
@@ -242,7 +245,7 @@ def calendar_with_events():
     calendar = Calendar()
     event = Event("Event 1",
                   "Event 1 description",
-                  date(2024, 5, 1),
+                  base_date,
                   time(10, 0),
                   time(11, 0),
                   id="event_id")
@@ -250,12 +253,12 @@ def calendar_with_events():
 
     calendar.add_event("Event 2",
                        "Event 2 description",
-                       date(2024, 5, 1),
+                       base_date,
                        time(12, 0),
                        time(13, 0))
     calendar.add_event("Event 3",
                        "Event 3 description",
-                       date(2024, 5, 1),
+                       base_date,
                        time(14, 0),
                        time(15, 0))
     return calendar
@@ -266,13 +269,13 @@ def calendar_with_some_slots_available():
     calendar = Calendar()
     calendar.add_event("Event 1",
                        "Event 1 description",
-                       date(2024, 5, 1),
+                       base_date,
                        time(0, 0),
                        time(12, 0))
 
     calendar.add_event("Event 2",
                        "Event 2 description",
-                       date(2024, 5, 1),
+                       base_date,
                        time(13, 0),
                        time(23, 59))
 
@@ -296,14 +299,14 @@ class TestCalendar:
     @pytest.mark.skipif(not calendar_defined, reason="Calendar class not defined")
     @pytest.mark.parametrize(
         "method_name, expected_return_type, args",
-        [("add_event", str, ("Event 1", "Event 1 description", date(2024, 5, 1), time(10, 0), time(11, 0))),
-         ("update_event", None, ("event_id", "Event 1", "Event 1 description", date(2024, 5, 1), time(10, 0), time(11, 0))),
+        [("add_event", str, ("Event 1", "Event 1 description", base_date, time(10, 0), time(11, 0))),
+         ("update_event", None, ("event_id", "Event 1", "Event 1 description", base_date, time(10, 0), time(11, 0))),
          ("delete_event", None, ("event_id",)),
-         ("find_events", dict, (date(2024, 5, 1), date(2024, 5, 2))),
-         ("add_reminder", None, ("event_id", datetime(2024, 5, 1, 9, 0), "email")),
+         ("find_events", dict, (base_date, base_date + timedelta(days=1))),
+         ("add_reminder", None, ("event_id", datetime(base_date.year, base_date.month, base_date.day, 9, 0), "email")),
          ("delete_reminder", None, ("event_id", 0)),
          ("list_reminders", list, ("event_id",)),
-         ("find_available_slots", list, (date(2024, 5, 1),)),
+         ("find_available_slots", list, (base_date,)),
          ("__init__", None, ())]
     )
     def test_calendar_class_has_methods(self, calendar_with_events, method_name, expected_return_type, args):
@@ -324,18 +327,18 @@ class TestCalendar:
 
     @pytest.mark.skipif(not calendar_defined, reason="Calendar class not defined")
     def test_add_event_method_adds_the_event_to_the_event_dict(self, empty_calendar):
-        event_id = empty_calendar.add_event("Event 1", "Event 1 description", date(2024, 5, 1), time(10, 0), time(11, 0))
+        event_id = empty_calendar.add_event("Event 1", "Event 1 description", base_date, time(10, 0), time(11, 0))
         assert len(empty_calendar.events) == 1
         assert event_id in empty_calendar.events
         assert empty_calendar.events[event_id].title == "Event 1"
         assert empty_calendar.events[event_id].description == "Event 1 description"
-        assert empty_calendar.events[event_id].date_ == date(2024, 5, 1)
+        assert empty_calendar.events[event_id].date_ == base_date
         assert empty_calendar.events[event_id].start_at == time(10, 0)
         assert empty_calendar.events[event_id].end_at == time(11, 0)
 
     @pytest.mark.skipif(not calendar_defined, reason="Calendar class not defined")
     def test_add_event_method_returns_event_id(self, empty_calendar):
-        event_id = empty_calendar.add_event("Event 1", "Event 1 description", date(2024, 5, 1), time(10, 0), time(11, 0)
+        event_id = empty_calendar.add_event("Event 1", "Event 1 description", base_date, time(10, 0), time(11, 0)
         )
         assert event_id
 
@@ -346,29 +349,29 @@ class TestCalendar:
 
     @pytest.mark.skipif(not calendar_defined, reason="Calendar class not defined")
     def test_add_event_method_creates_day_object_in_days_dict(self, empty_calendar):
-        empty_calendar.add_event("Event 1", "Event 1 description", date(2024, 5, 1), time(10, 0), time(11, 0))
-        assert date(2024, 5, 1) in empty_calendar.days
+        empty_calendar.add_event("Event 1", "Event 1 description", base_date, time(10, 0), time(11, 0))
+        assert base_date in empty_calendar.days
 
     @pytest.mark.skipif(not calendar_defined, reason="Calendar class not defined")
     def test_add_event_method_calls_add_event_on_day_object(self, empty_calendar):
-        event_id = empty_calendar.add_event("Event 1", "Event 1 description", date(2024, 5, 1), time(10, 0), time(11, 0))
-        assert event_id in empty_calendar.days[date(2024, 5, 1)].slots.values()
+        event_id = empty_calendar.add_event("Event 1", "Event 1 description", base_date, time(10, 0), time(11, 0))
+        assert event_id in empty_calendar.days[base_date].slots.values()
 
     @pytest.mark.skipif(not calendar_defined, reason="Calendar class not defined")
     def test_add_reminder_method_functionality(self, calendar_with_events):
-        calendar_with_events.add_reminder("event_id", datetime(2024, 5, 1, 9, 0), Reminder.EMAIL)
+        calendar_with_events.add_reminder("event_id", datetime(base_date.year, base_date.month, base_date.day, 9, 0), Reminder.EMAIL)
         assert len(calendar_with_events.events["event_id"].reminders) == 1
         assert calendar_with_events.events["event_id"].reminders[0].type == Reminder.EMAIL
-        assert calendar_with_events.events["event_id"].reminders[0].date_time == datetime(2024, 5, 1, 9, 0)
+        assert calendar_with_events.events["event_id"].reminders[0].date_time == datetime(base_date.year, base_date.month, base_date.day, 9, 0)
 
     @pytest.mark.skipif(not calendar_defined, reason="Calendar class not defined")
     def test_add_reminder_method_calls_event_not_found_error(self, calendar_with_events):
         with pytest.raises(ValueError):
-            calendar_with_events.add_reminder("event_id_not_found", datetime(2024, 5, 1, 9, 0), Reminder.EMAIL)
+            calendar_with_events.add_reminder("event_id_not_found", datetime(base_date.year, base_date.month, base_date.day, 9, 0), Reminder.EMAIL)
 
     @pytest.mark.skipif(not calendar_defined, reason="Calendar class not defined")
     def test_find_available_slots_method_functionality(self, calendar_with_some_slots_available):
-        available_slots = calendar_with_some_slots_available.find_available_slots(date(2024, 5, 1))
+        available_slots = calendar_with_some_slots_available.find_available_slots(base_date)
         assert len(available_slots) == 4
         assert available_slots[0] == time(12, 0)
         assert available_slots[1] == time(12, 15)

@@ -11,10 +11,10 @@ class Reminder:
     EMAIL: ClassVar[str] = 'email'
     SYSTEM: ClassVar[str] = 'system'
     date_time: datetime
-    type_: str = EMAIL
+    type: str = EMAIL
 
     def __str__(self) -> str:
-        return f"Reminder on {self.date_time} of type {self.type_}"
+        return f"Reminder on {self.date_time} of type {self.type}"
 
 
 @dataclass
@@ -27,15 +27,15 @@ class Event:
     reminders: list[Reminder] = field(init=False, default_factory=list)
     id: str = field(default_factory=generate_unique_id)
 
-    def add_reminder(self, date_time: datetime, type_: str):
-        new_reminder = Reminder(date_time, type_)
+    def add_reminder(self, date_time: datetime, type: str):
+        new_reminder = Reminder(date_time, type)
         self.reminders.append(new_reminder)
 
     def delete_reminder(self, reminder_index: int):
-        if 0 < reminder_index or reminder_index >= len(self.reminders):
-            del self.reminders[reminder_index]
-        else:
+        if reminder_index < 0 or reminder_index >= len(self.reminders):
             reminder_not_found_error()
+        else:
+            del self.reminders[reminder_index]
 
     def __str__(self) -> str:
         return (f"ID: {self.id}"
@@ -86,7 +86,7 @@ class Day:
                     self.slots[slot] = event_id
 
 
-class Calender:
+class Calendar:
     def __init__(self):
         self.days: dict[date, Day] = {}
         self.events: dict[str, Event] = {}
